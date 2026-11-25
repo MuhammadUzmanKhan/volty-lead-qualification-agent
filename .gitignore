@@ -1,0 +1,4 @@
+node_modules/
+.DS_Store
+# personal draft, not part of the project
+email-draft.md
