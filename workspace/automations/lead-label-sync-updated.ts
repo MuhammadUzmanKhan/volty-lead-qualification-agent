@@ -9,6 +9,12 @@ import { defineAutomation, z } from '~/automation'
 // the matching label and removes the other three. Idempotent: if the contact
 // already carries exactly the right label it changes nothing.
 const LEADS = 'tbl:tjfacuh0u0ru'
+
+// Hardening: the row's "conversation" field is written by the model, so treat it
+// as untrusted. Accept only a well-formed id, and only act on a customer
+// conversation in the Lumen Lane web chat inbox or the Sandbox (where tests run).
+const ALLOWED_INBOXES = ['bfsmumi2ntux', 'd2xquq5v16ld']
+const CONV_ID = /^(?:cnv:)?([a-z0-9]{8,32})$/
 const LABELS: Record<string, string> = {
   Hot: 'Lead: Hot',
   Warm: 'Lead: Warm',
@@ -29,10 +35,17 @@ export default defineAutomation({
     const f = res.row?.fields ?? res.fields ?? {}
     const want = f.fit ? LABELS[f.fit] : undefined
     if (!want) return { changed: false, reason: 'not scored yet' }
-    const conversationId = (f.conversation ?? '').trim().replace(/^cnv:/, '')
-    if (!conversationId) return { changed: false, reason: 'no conversation on row' }
+    const m = CONV_ID.exec((f.conversation ?? '').trim())
+    if (!m) return { changed: false, reason: 'no valid conversation on row' }
 
-    const conv = (await ctx.volty.conversations.get({ conversationId })) as { contactId?: string | null }
+    const conversationId = m[1]
+    const conv = (await ctx.volty.conversations.get({ conversationId })) as {
+      contactId?: string | null
+      inboxId?: string | null
+      lane?: string | null
+    }
+    if (!conv.inboxId || !ALLOWED_INBOXES.includes(conv.inboxId) || conv.lane !== 'contact')
+      return { changed: false, reason: 'conversation outside the lead inboxes' }
     if (!conv.contactId) return { changed: false, reason: 'conversation has no contact' }
     const got = (await ctx.volty.contacts.get({ id: conv.contactId })) as {
       contact?: { segments?: string[] }

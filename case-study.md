@@ -146,6 +146,7 @@ Each fix was a change to rules or settings, pushed with `volty push`, and then t
 
 - **Data isolation:** the Leads table is scoped so each customer chat can read and change only its own row.
 - **The alert automation:** run logs show `staff notify` plus the `alerted` write-back. The second `row.updated` event exits with "already alerted", so there are no duplicate pings.
+- **Untrusted model output in automations:** the automations act on the conversation id the model wrote into the row. A prompt-injected visitor could try to point that at another chat. So every automation checks the id's format, only acts on customer chats in the Lumen Lane or Sandbox inbox, and the alert caps, cleans and redacts credential-shaped text before it reaches staff.
 - **Volty's code reviewer** flagged my first `row.created` automation as incomplete because it hadn't seen its twin. I documented the pairing in the source, and it passed.
 
 ## 4. What I'd improve with more time
