@@ -5,3 +5,5 @@ email-draft.md
 marketing-agent.md
 # generated Word copies of the docs
 *.docx
+# personal interview notes
+call-prep.md
