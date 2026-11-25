@@ -13,7 +13,7 @@ An inbound lead-qualification agent for **Lumen Lane Digital**, a fictional Sing
 | `workspace/` | The Volty project folder (`volty pull` / `volty push`) |
 | `workspace/instructions/org.md` | Workspace rules: voice and hard rules |
 | `workspace/inboxes/lumen-lane-digital/instructions.md` | Inbox rules: qualify, score, record, hand off |
-| `workspace/inboxes/**lumen**-lane-digital/inbox.ts` | Hand-off topics, smart priority and labels, routing, web chat look |
+| `workspace/inboxes/**lumen**-lane-digital/inbox.ts` | Hand-off topics, **smart** priority and labels, routing, web chat look |
 | `workspace/automations/hot-lead-alert-*.ts` | Speed-to-lead alert when a Leads row becomes Hot |
 | `workspace/automations/lead-label-sync-*.ts` | Keeps the contact's `Lead: …` label in step with the row's fit |
 | `knowledge/lumen-lane-playbook.md` | Agency knowledge, uploaded to Drive at `/Knowledge/` |

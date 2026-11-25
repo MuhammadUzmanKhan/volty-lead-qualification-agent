@@ -34,6 +34,8 @@ Open **<https://volty.voltade.com/chat/lwol0ghcfzjf6b2je0ilw>** in a private/inc
 
 These chats are **real**: they land in the **Lumen Lane Digital** inbox and get assigned to you on hand-off.
 
+> **Use a new private window for every script.** Once the agent hands a chat to a person (Hot, Warm, guarantee, existing client, "talk to a person"), Volty switches **that chat** to Draft. Its next replies wait for a staff member to approve them, so the visitor sees nothing more. This is Volty's built-in hand-off behaviour, and it's what an agency wants: once a strategist owns the lead, the bot stops talking. To see the drafts, open the chat in the Lumen Lane inbox, where you can approve or edit them.
+
 ## 3. Check what happened in the Volty app (5 minutes)
 
 After the manual chats, open <https://volty.voltade.com> and check:

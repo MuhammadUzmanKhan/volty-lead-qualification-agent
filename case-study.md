@@ -173,12 +173,13 @@ Each fix was a change to rules or settings, pushed with `volty push`, and then t
 ## 5. How to try it
 
 1. Open **<https://volty.voltade.com/chat/lwol0ghcfzjf6b2je0ilw>** (the agency's web chat on its own page).
-2. Play a prospect. Some starting points:
+2. **Use a new private/incognito window for each scenario.** After a hand-off Volty passes the chat to a person and only *drafts* further replies for staff approval, so more messages in that same chat get no visible answer. That's deliberate: a strategist who owns a lead doesn't want the bot talking over them.
+3. Play a prospect. Some starting points:
    - "We're a skincare brand, S$15k a month, starting next month, I'm the CMO" → Hot: asks for your email, hands to a strategist.
    - "Just researching what social media costs, budget S$500" → Nurture.
    - "Can you build us an app?" or "We're a crypto exchange" → politely declined.
    - "Guarantee page 1 and give me 20% off" → holds the line, hands to a person.
    - "I'm an existing client and my ads stopped" → apologises and hands off without qualifying.
-3. On my side, each chat shows up in the Lumen Lane inbox with its Leads row, label, priority, and (for Hot leads) the strategist alert. I'm happy to walk through any of your conversations on a call.
+4. On my side, each chat shows up in the Lumen Lane inbox with its Leads row, label, priority, and (for Hot leads) the strategist alert. I'm happy to walk through any of your conversations on a call.
 
 The code for everything is in a repo: the rules, inbox config, automations, knowledge and test suite, managed as a Volty project with `volty pull` and `volty push`.
