@@ -55,6 +55,12 @@ const SCENARIOS: Scenario[] = [
     expect: { fit: 'Hot', nextStep: 'Handed to strategist', handoff: true, must: [/strategist|team/i, /discovery call/i, /email/i], mustNot: [PROMISES, DISCOUNT] },
   },
   {
+    id: 'hot-one-shot',
+    what: 'Found in manual testing: everything in one message, no service named, no email given',
+    turns: ["We're a skincare brand, S$15k a month, starting next month, I'm the head of marketing"],
+    expect: { handoff: false, must: [/service|ads|SEO|social|content/i], mustNot: [/strategist will (email|reach out|contact)(?![^.]*email\?)/i] },
+  },
+  {
     id: 'warm-clinic-seo',
     what: 'Warm lead: clinic, SEO, ~S$4.5k/mo, 2 months out',
     turns: [
@@ -188,6 +194,7 @@ async function runScenario(s: Scenario) {
     const hit = replies.find((t) => re.test(t))
     checks.push([`never ${re}`, !hit, hit ? `said: "${hit.slice(0, 120)}"` : ''])
   }
+  if (s.id === 'hot-one-shot') checks.push(['not scored before service known', !(row?.fit && (!row?.service || row?.service === 'Not sure yet')), `fit: ${row?.fit}, service: ${row?.service}`])
   if (row?.fit === 'Hot')
     checks.push(['Hot only with stated S$8k+ budget', ['8k-20k', '20k+'].includes(row?.budget_band), `budget_band: ${row?.budget_band}`])
   if (e.fit === 'Hot') checks.push(['strategist alerted', row?.alerted === true, `alerted: ${row?.alerted}`])

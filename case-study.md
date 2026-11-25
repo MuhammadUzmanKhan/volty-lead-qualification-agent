@@ -127,10 +127,10 @@ Every failure led to a fix below, then a re-run.
 How I got there, honestly:
 - Prompt-only tuning plateaued at **31 of 33**. Both misses were hand-off judgement calls: once the crypto enquiry was declined but still handed off, once the guarantee request wasn't handed off.
 - The structural fix ("Pricing discussion" plus the backstop) took the guarantee scenario to **10/10** at once.
-- The weakest scenario is still the restricted-industry decline: **8/10** in the batch just before the final one, then 5/5. I'd keep watching it, and §4.1 says how I'd close it for good.
+- The weakest scenario is still the restricted-industry decline: **8/10** in the batch just before the final one, then 5/5. I'd keep watching it, and §4.2 says how I'd close it for good.
 - No final-config run broke a hard rule: no guarantee, discount or invented promise.
 
-A full suite run costs about **US$0.10** in model usage and takes about 5 minutes.
+A full suite run costs about **US$0.10** in model usage and takes about 5 minutes. The binding limit was not that but the workspace's weekly allowance; see finding 13.
 
 ### What the tests caught (the useful part)
 
@@ -147,7 +147,9 @@ The first runs failed in ways a demo would never have shown:
 9. **An existing client was filed as a lead, and the fix didn't hold until I fixed the structure.** The reply was always right (apologised, account team will reply). But the agent sometimes also wrote a Leads row, and twice it said "I've routed this to the account team" without making the hand-off call. A sharper one-line rule passed 3/3 and then failed again 2 of 2. The real cause was **instruction order and a buried contradiction**: "record every enquiry (always)" came first, the existing-client rule came last, and a closing line said "before any hand-off, make sure the Leads row is current". → Rewrote the inbox rules as a pipeline: **Step 1, triage** (hand-off cases decided first, with "the hand-off is a tool call: make it before you say it's done"); **Step 2, qualify** prospects only; then score, record, next step. No line contradicts another.
 10. **The structural fix worked where prompt tweaks hadn't.** The guarantee/discount scenario had been stuck at about 2 in 3. Instead of another sentence, I gave the decision a home in the data: a new `next_step` value, "Pricing discussion", and the hand-off backstop now assigns the strategist whenever it's set. Result: **10/10** in the next measurement.
 11. **Shortening the rules caused a regression, and exposed a rubric bug.** To make room under the 4,000-character cap, I trimmed the qualification steps and dropped the line listing which job titles count as decision makers. A "head of marketing" lead was then scored Warm ("decision authority not confirmed") in 2 of 5 runs, so no alert fired. Looking closer, the rubric overlapped: Hot meant "start within 3 months" while Warm listed "1–3 months" as a weakness. → Restored the titles and made Warm mean "a start *more than* 3 months away", in the rules and the label description alike. The lesson is that every edit, even a deletion, needs the full regression suite.
-12. **My own test was wrong once.** After a visitor pasted a password, the agent sometimes handed off and sometimes didn't. Both are reasonable, so the test now treats hand-off there as a judgement call and checks only what must be true.
+12. **A human found what about 300 scripted runs missed.** Trying the live chat myself, I typed everything in one message ("skincare brand, S$15k a month, next month, head of marketing") with no service named and no email. The agent scored it Hot, promised "a strategist will email you within 1 working day", and never asked for an email. My scripts always named the service and gave an email, so they never hit this path. → The web chat now asks every visitor for their email after Volty's first answer (a widget setting, so it no longer depends on the model). The rules say no Hot or Warm before the service is known, and never promise an email you don't have. That exact message is now a test (`hot-one-shot`): 2/3 in its first runs, with the contact-details part now enforced by the widget. Lesson: scripted tests encode my assumptions about how people type; a few minutes of real use broke them.
+13. **The tests used up the client's allowance.** Close to 300 test conversations in one evening consumed 100% of the workspace's weekly AI allowance; the Sandbox alone was 96% of it. With no allowance left, replies to real visitors are held until a top-up or the weekly reset. For a real client that would be an outage I caused. → I stopped testing and topped up. The right setup is a separate developer workspace (Volty supports one) for the test suite, a budget per run, and only a small smoke test against production.
+14. **My own test was wrong once.** After a visitor pasted a password, the agent sometimes handed off and sometimes didn't. Both are reasonable, so the test now treats hand-off there as a judgement call and checks only what must be true.
 
 Each fix was a change to rules or settings, pushed with `volty push`, and then the whole suite ran again as a regression check.
 
@@ -161,14 +163,15 @@ Each fix was a change to rules or settings, pushed with `volty push`, and then t
 
 ## 4. What I'd improve with more time
 
-1. **Take the last hand-off decisions out of the model's hands.** "Pricing discussion" plus the backstop already made the guarantee/discount case deterministic. Two more of the same kind: (a) import the agency's client list as contacts with a `Client` label and route on it, so a client's chat reaches their account manager before the lead flow starts; (b) close the restricted-industry case the same way, with a "Declined politely" row returning the chat to Volty. That needs a clean way to un-hand-off a chat: today `unassign` clears the owner but leaves the chat in staff-review mode, which I tested.
-2. **Book the call, not just promise it.** Connect a calendar source (Google Calendar or Cal.com) as a tool, so Hot leads pick a discovery slot in the chat. That's the biggest conversion win.
-3. **Push leads into the agency's CRM** (HubSpot or Pipedrive) through a source call, and create a Volty **deal** per Hot or Warm lead, so pipeline reporting works.
-4. **Nurture follow-up automation:** an email or WhatsApp sequence for Nurture leads that actually sends the guide, then checks back after 30 days, with opt-out handled through Contact Labels.
-5. **A larger test set with an LLM judge:** about 40 scenarios (Malay and Chinese visitors, vague budgets, people who change their answers, competitor-bashing bait), each run several times to measure consistency rather than a single pass. Regex checks are a floor.
-6. **Leads board page:** a mini-app showing this week's leads by fit, with time-to-first-reply and time-to-strategist, so the agency sees the agent's return on investment.
-7. **Learn from strategists:** when a strategist re-scores a lead, capture it as a Learned rule, so the rubric tightens over time.
-8. **Real channels:** WhatsApp (where most SG and MY prospects actually are), and the widget installed on the agency's real site.
+1. **Run the test suite in a separate developer workspace, with a budget.** My testing used the production workspace's weekly allowance (finding 13). The suite should run against a copy of the project (same files, `volty push` to a dev target) and stop at a set cost, with only a small smoke test on production.
+2. **Take the last hand-off decisions out of the model's hands.** "Pricing discussion" plus the backstop already made the guarantee/discount case deterministic. Two more of the same kind: (a) import the agency's client list as contacts with a `Client` label and route on it, so a client's chat reaches their account manager before the lead flow starts; (b) close the restricted-industry case the same way, with a "Declined politely" row returning the chat to Volty. That needs a clean way to un-hand-off a chat: today `unassign` clears the owner but leaves the chat in staff-review mode, which I tested.
+3. **Book the call, not just promise it.** Connect a calendar source (Google Calendar or Cal.com) as a tool, so Hot leads pick a discovery slot in the chat. That's the biggest conversion win.
+4. **Push leads into the agency's CRM** (HubSpot or Pipedrive) through a source call, and create a Volty **deal** per Hot or Warm lead, so pipeline reporting works.
+5. **Nurture follow-up automation:** an email or WhatsApp sequence for Nurture leads that actually sends the guide, then checks back after 30 days, with opt-out handled through Contact Labels.
+6. **A larger test set with an LLM judge:** about 40 scenarios (Malay and Chinese visitors, vague budgets, people who change their answers, competitor-bashing bait), each run several times to measure consistency rather than a single pass. Regex checks are a floor.
+7. **Leads board page:** a mini-app showing this week's leads by fit, with time-to-first-reply and time-to-strategist, so the agency sees the agent's return on investment.
+8. **Learn from strategists:** when a strategist re-scores a lead, capture it as a Learned rule, so the rubric tightens over time.
+9. **Real channels:** WhatsApp (where most SG and MY prospects actually are), and the widget installed on the agency's real site.
 
 ## 5. How to try it
 
