@@ -5,7 +5,6 @@ An inbound lead-qualification agent for **Lumen Lane Digital**, a fictional Sing
 - **Try it:** <https://volty.voltade.com/chat/lwol0ghcfzjf6b2je0ilw>
 - **Case study:** [case-study.md](case-study.md)
 - **How to test it:** [TESTING.md](TESTING.md)
-- **Brief:** [marketing-agent.md](marketing-agent.md)
 
 ## Layout
 

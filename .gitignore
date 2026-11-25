@@ -1,4 +1,7 @@
 node_modules/
 .DS_Store
-# personal draft, not part of the project
+# personal: not part of the project
 email-draft.md
+marketing-agent.md
+# generated Word copies of the docs
+*.docx
