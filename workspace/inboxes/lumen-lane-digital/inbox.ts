@@ -18,10 +18,10 @@ export default defineInbox({
   handoff: {
     targetMinutes: 240,
     topics: [
-      "Qualified lead scored Hot or Warm",
+      "Hot or Warm lead (never a Not a fit one)",
       "Visitor asks for a human, a call or a named person",
       "Existing client: billing, campaign, report or complaint",
-      "Price or contract negotiation, or a custom proposal",
+      "Discount, guarantee or price negotiation request",
       "Legal, privacy (PDPA), data deletion or disputes",
       "Press, partnership, sponsorship or speaking enquiry",
       "Upset or angry visitor",

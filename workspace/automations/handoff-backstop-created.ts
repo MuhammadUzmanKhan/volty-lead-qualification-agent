@@ -1,7 +1,7 @@
 import { defineAutomation, z } from '~/automation'
 
 // Hand-off backstop, half 1 of 2 (twin: handoff-backstop-updated).
-// When Volty marks a lead "Handed to strategist" in the Leads table, a person must
+// When Volty marks a lead "Handed to strategist" or "Pricing discussion" in the Leads table, a person must
 // actually own the chat. In testing the model once told a visitor "I've passed
 // this to the team" without making the hand-off call, so this routine closes that
 // say/do gap deterministically: if the row says handed off and nobody is assigned
@@ -15,6 +15,9 @@ const LEADS = 'tbl:tjfacuh0u0ru'
 const ALLOWED_INBOXES = ['bfsmumi2ntux', 'd2xquq5v16ld']
 const CONV_ID = /^(?:cnv:)?([a-z0-9]{8,32})$/
 const STRATEGIST = 'lm8n2gdqq19jo26'
+// next_step values that mean a person must own the chat: a qualified lead, or a
+// prospect asking for a discount, guarantee or custom price (only a strategist decides).
+const HANDOFF_STEPS = ['Handed to strategist', 'Pricing discussion']
 
 export default defineAutomation({
   id: 'handoff-backstop-created',
@@ -27,7 +30,7 @@ export default defineAutomation({
       fields?: { next_step?: string | null; conversation?: string | null }
     }
     const f = res.row?.fields ?? res.fields ?? {}
-    if (f.next_step !== 'Handed to strategist') return { assigned: false, reason: 'not handed off' }
+    if (!HANDOFF_STEPS.includes(f.next_step ?? '')) return { assigned: false, reason: 'not handed off' }
     const m = CONV_ID.exec((f.conversation ?? '').trim())
     if (!m) return { assigned: false, reason: 'no valid conversation on row' }
 

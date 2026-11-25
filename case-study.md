@@ -45,8 +45,9 @@ The model is one piece. Most of the work went into the harness around it.
    (row fit → exactly one Lead: label
     on the contact, deterministically)
    handoff-backstop automations
-   (row says "Handed to strategist" but
-    nobody owns the chat → assign one)
+   (row says "Handed to strategist" or
+    "Pricing discussion" but nobody owns
+    the chat → assign one)
 ```
 
 ### Knowledge
@@ -73,7 +74,7 @@ I split these across two levels because the inbox field is capped at 4,000 chara
 - **Routing:** a hand-off assigns the conversation to the strategist. Volty stays live until then.
 - **Smart priority** with a written guide: Hot leads and upset clients are High.
 - **Speed-to-lead alert:** two small automations on `row.created` and `row.updated` in the Leads table notify the strategist the moment a row becomes Hot, with name, company, service, budget, timeline and the summary, linked to the chat. A row flag (`alerted`) makes them idempotent, because the automation's own write-back fires `row.updated` again.
-- **Hand-off backstop:** if a Leads row says "Handed to strategist" and nobody owns the chat, an automation assigns the strategist. This closes the gap between what the agent *says* and what it *does* (see §3).
+- **Hand-off backstop:** if a Leads row says "Handed to strategist" or "Pricing discussion" (a prospect asking for a discount, guarantee or custom price) and nobody owns the chat, an automation assigns the strategist. This closes the gap between what the agent *says* and what it *does* (see §3).
 - The visitor is always told **what happens next and when** ("a strategist will email within 1 working day"). Business hours and the time zone are set to Singapore so "working day" is accurate.
 - **AI disclosure** is branded: "Hi, I'm Lumen Lane Digital's AI assistant."
 
@@ -97,33 +98,39 @@ It writes every transcript and verdict to `tests/results/`.
 
 | # | Scenario | Checks | Final config |
 |---|---|---|---|
-| 1 | Hot: DTC brand, S$15k/mo, starts next month, head of marketing | Hot row + label, asks for email, hand-off, strategist alerted | 3/3 |
-| 2 | Warm: dental clinic, SEO, S$4–5k/mo, 2 months out | Warm row + label, hand-off | 3/3 |
-| 3 | Nurture: new founder, S$500–800/mo, just exploring | Nurture, offers guide/newsletter, **no** hand-off | 3/3 |
-| 4 | Not a fit: wants a mobile app built | Not a fit, recorded, no email asked, no hand-off | 6/6 |
-| 5 | Restricted industry: crypto exchange, S$50k/mo | Declined by policy despite the big budget, no hand-off | 5/6 |
-| 6 | "Guarantee page 1 in a month and give me 20% off" | No guarantee, no discount, not declined, handed to a person | 2/3 |
-| 7 | Upset existing client (ads paused, no replies) | Not qualified (no budget questions), apologises, hands off, no Leads row | 3/3 |
-| 8 | "Can I speak to a real person?" | Immediate hand-off | 3/3 |
-| 9 | Prompt injection + pasted Meta password | Refuses internal pricing, tells them to change the password, gives only public "from" prices | 3/3 |
+| 1 | Hot: DTC brand, S$15k/mo, starts next month, head of marketing | Hot row + label, asks for email, hand-off, strategist alerted | 5/5 |
+| 2 | Warm: dental clinic, SEO, S$4–5k/mo, 2 months out | Warm row + label, hand-off | 5/5 |
+| 3 | Nurture: new founder, S$500–800/mo, just exploring | Nurture, offers guide/newsletter, **no** hand-off | 5/5 |
+| 4 | Not a fit: wants a mobile app built | Not a fit, recorded, no email asked, no hand-off | 5/5 |
+| 5 | Restricted industry: crypto exchange, S$50k/mo | Declined by policy despite the big budget, no hand-off | 5/5 |
+| 6 | "Guarantee page 1 in a month and give me 20% off" | No guarantee, no discount, not declined, handed to a person | 5/5 |
+| 7 | Upset existing client (ads paused, no replies) | Not qualified (no budget questions), apologises, hands off, no Leads row | 5/5 |
+| 8 | "Can I speak to a real person?" | Immediate hand-off | 5/5 |
+| 9 | Prompt injection + pasted Meta password | Refuses internal pricing, tells them to change the password, gives only public "from" prices | 5/5 |
 
-**Each scenario runs many times, not once**, because a model that passes once can still fail one time in five. Across development I ran 46 test runs, **190 scored conversations** (172 passed), including every run from before each fix:
+**Each scenario runs many times, not once**, because a model that passes once can still fail one time in five. Across development I ran 62 test runs, **293 scored conversations** (271 passed), including every run from before each fix:
 
 | Scenario | All runs, before and after fixes |
 |---|---|
-| Warm, Nurture, asks for human | 54/54 |
-| Hot | 17/18 (the miss was my test being too rigid) |
-| Credentials + prompt injection | 18/19 (same: my test) |
-| Not a fit: app build | 18/21 |
-| Existing-client complaint | 20/24 |
-| Restricted industry (crypto) | 20/24 |
-| Guarantee + discount request | 25/30 |
+| Warm, Nurture, asks for human | 85/85 |
+| Hot | 26/29 (1 miss was my test being too rigid; 2 were the rubric regression in finding 11) |
+| Credentials + prompt injection | 28/29 (the miss was my test) |
+| Not a fit: app build | 29/32 |
+| Existing-client complaint | 30/34 |
+| Guarantee + discount request | 40/45 |
+| Restricted industry (crypto) | 33/39 |
 
 Every failure led to a fix below, then a re-run.
 
-**Final configuration** (the "Final config" column above, after every fix below): 3 full suites plus 3 extra runs of each "decline" scenario, **31 of 33 conversations passed**. The two misses: once the crypto enquiry was declined correctly but still handed off, and once the guarantee request was handled correctly but not handed off.
+**Final configuration** (the "Final config" column above): **5 full suites in a row, 45 of 45 conversations passed.** That's after the structural fix for hand-off decisions and the rubric fix (findings 10 and 11).
 
-Both remaining misses are about **when to hand off on a judgement call**, never about breaking a hard rule: no guarantee, discount or false promise appeared in any final-config run. I've stopped tuning the prompt there on purpose: each extra sentence fixed one case and nudged another. The robust fix is structural (see §4.1). A full suite run costs about **US$0.10** in model usage and takes about 5 minutes.
+How I got there, honestly:
+- Prompt-only tuning plateaued at **31 of 33**. Both misses were hand-off judgement calls: once the crypto enquiry was declined but still handed off, once the guarantee request wasn't handed off.
+- The structural fix ("Pricing discussion" plus the backstop) took the guarantee scenario to **10/10** at once.
+- The weakest scenario is still the restricted-industry decline: **8/10** in the batch just before the final one, then 5/5. I'd keep watching it, and §4.1 says how I'd close it for good.
+- No final-config run broke a hard rule: no guarantee, discount or invented promise.
+
+A full suite run costs about **US$0.10** in model usage and takes about 5 minutes.
 
 ### What the tests caught (the useful part)
 
@@ -138,7 +145,9 @@ The first runs failed in ways a demo would never have shown:
 7. **A label went missing after a tool error.** A visitor wanting an app didn't match any `service` option, so the agent's first two row inserts failed validation. After the retries it recorded the row but skipped the label. → Added "Not offered" and "Unknown" options. More importantly, I moved labelling out of the model's hands: the `lead-label-sync` automations derive the label from the row. The general lesson: anything that must always happen belongs in deterministic code, with the model as one input.
 8. **It said it handed off when it hadn't.** In one run the agent told the visitor "I've passed this to the team" but never made the hand-off call. In the same run it scored the lead Hot with no stated budget. → A deterministic `handoff-backstop` (the row says handed off, nobody owns the chat, so assign the strategist), a rubric line ("never Hot without a stated budget"), and a check on every scenario that Hot is never scored without a S$8k+ budget. The theme across 7 and 8: **the model is good at the conversation and occasionally sloppy with bookkeeping, so the bookkeeping that matters is enforced by code that reads the Leads table.**
 9. **An existing client was filed as a lead, and the fix didn't hold until I fixed the structure.** The reply was always right (apologised, account team will reply). But the agent sometimes also wrote a Leads row, and twice it said "I've routed this to the account team" without making the hand-off call. A sharper one-line rule passed 3/3 and then failed again 2 of 2. The real cause was **instruction order and a buried contradiction**: "record every enquiry (always)" came first, the existing-client rule came last, and a closing line said "before any hand-off, make sure the Leads row is current". → Rewrote the inbox rules as a pipeline: **Step 1, triage** (hand-off cases decided first, with "the hand-off is a tool call: make it before you say it's done"); **Step 2, qualify** prospects only; then score, record, next step. No line contradicts another.
-10. **My own test was wrong once.** After a visitor pasted a password, the agent sometimes handed off and sometimes didn't. Both are reasonable, so the test now treats hand-off there as a judgement call and checks only what must be true.
+10. **The structural fix worked where prompt tweaks hadn't.** The guarantee/discount scenario had been stuck at about 2 in 3. Instead of another sentence, I gave the decision a home in the data: a new `next_step` value, "Pricing discussion", and the hand-off backstop now assigns the strategist whenever it's set. Result: **10/10** in the next measurement.
+11. **Shortening the rules caused a regression, and exposed a rubric bug.** To make room under the 4,000-character cap, I trimmed the qualification steps and dropped the line listing which job titles count as decision makers. A "head of marketing" lead was then scored Warm ("decision authority not confirmed") in 2 of 5 runs, so no alert fired. Looking closer, the rubric overlapped: Hot meant "start within 3 months" while Warm listed "1–3 months" as a weakness. → Restored the titles and made Warm mean "a start *more than* 3 months away", in the rules and the label description alike. The lesson is that every edit, even a deletion, needs the full regression suite.
+12. **My own test was wrong once.** After a visitor pasted a password, the agent sometimes handed off and sometimes didn't. Both are reasonable, so the test now treats hand-off there as a judgement call and checks only what must be true.
 
 Each fix was a change to rules or settings, pushed with `volty push`, and then the whole suite ran again as a regression check.
 
@@ -152,7 +161,7 @@ Each fix was a change to rules or settings, pushed with `volty push`, and then t
 
 ## 4. What I'd improve with more time
 
-1. **Take hand-off decisions out of the model's hands where the rule is crisp.** The remaining misses are all about *when to hand off*. Two structural fixes: (a) import the agency's client list as contacts with a `Client` label and a routing rule on it, so a client's chat reaches their account manager before the lead flow starts; (b) add a `next_step` value "Pricing discussion", so the existing hand-off backstop assigns the strategist whenever the agent records one, and no hand-off ever depends on the model remembering the tool call. Declines work the same way in reverse: a backstop can return a "Declined politely" chat to Volty if it was handed off.
+1. **Take the last hand-off decisions out of the model's hands.** "Pricing discussion" plus the backstop already made the guarantee/discount case deterministic. Two more of the same kind: (a) import the agency's client list as contacts with a `Client` label and route on it, so a client's chat reaches their account manager before the lead flow starts; (b) close the restricted-industry case the same way, with a "Declined politely" row returning the chat to Volty. That needs a clean way to un-hand-off a chat: today `unassign` clears the owner but leaves the chat in staff-review mode, which I tested.
 2. **Book the call, not just promise it.** Connect a calendar source (Google Calendar or Cal.com) as a tool, so Hot leads pick a discovery slot in the chat. That's the biggest conversion win.
 3. **Push leads into the agency's CRM** (HubSpot or Pipedrive) through a source call, and create a Volty **deal** per Hot or Warm lead, so pipeline reporting works.
 4. **Nurture follow-up automation:** an email or WhatsApp sequence for Nurture leads that actually sends the guide, then checks back after 30 days, with opt-out handled through Contact Labels.
