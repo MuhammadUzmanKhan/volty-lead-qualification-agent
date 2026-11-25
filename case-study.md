@@ -122,7 +122,7 @@ It writes every transcript and verdict to `tests/results/`.
 
 Every failure led to a fix below, then a re-run.
 
-**Final configuration** (the "Final config" column above): **5 full suites in a row, 45 of 45 conversations passed.** That's after the structural fix for hand-off decisions and the rubric fix (findings 10 and 11).
+**Final configuration** (the "Final config" column above): **5 full suites in a row, 45 of 45 conversations passed.** That's after the structural fix for hand-off decisions and the rubric fix (findings 10 and 11). One later change was measured only briefly: after my manual test (finding 12) the web chat now asks for an email, and the agent must know the service before scoring Hot. That change has 3 runs of its own scenario (2 passed) and no full re-run, because the tests had used up the weekly allowance (finding 13). Re-running the full suite on it is the first thing I'd do next.
 
 How I got there, honestly:
 - Prompt-only tuning plateaued at **31 of 33**. Both misses were hand-off judgement calls: once the crypto enquiry was declined but still handed off, once the guarantee request wasn't handed off.
